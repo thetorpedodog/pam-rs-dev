@@ -4,6 +4,7 @@ use libc::c_char;
 use std::ffi::{CStr, CString};
 
 use constants::{PamFlag, PamResultCode};
+use items::ItemType;
 
 /// Opaque type, used as a pointer when making pam API calls.
 ///
@@ -36,13 +37,13 @@ extern "C" {
 
     fn pam_get_item(
         pamh: *const PamHandle,
-        item_type: crate::items::ItemType,
+        item_type: ItemType,
         item: &mut *const libc::c_void,
     ) -> PamResultCode;
 
     fn pam_set_item(
         pamh: *mut PamHandle,
-        item_type: crate::items::ItemType,
+        item_type: ItemType,
         item: *const libc::c_void,
     ) -> PamResultCode;
 
@@ -51,6 +52,14 @@ extern "C" {
         user: &*mut c_char,
         prompt: *const c_char,
     ) -> PamResultCode;
+
+    fn pam_get_authtok(
+        pamh: *const PamHandle,
+        item_type: ItemType,
+        data: &*mut c_char,
+        prompt: *const c_char,
+    ) -> PamResultCode;
+
 }
 
 pub extern "C" fn cleanup<T>(_: *const PamHandle, c_data: *mut libc::c_void, _: PamResultCode) {
@@ -65,8 +74,8 @@ impl PamHandle {
     /// Gets some value, identified by `key`, that has been set by the module
     /// previously.
     ///
-    /// See `pam_get_data` in
-    /// http://www.linux-pam.org/Linux-PAM-html/mwg-expected-by-module-item.html
+    /// See the [`pam_get_data` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_get_data.3.html).
     ///
     /// # Errors
     ///
@@ -75,8 +84,8 @@ impl PamHandle {
     /// # Safety
     ///
     /// The data stored under the provided key must be of type `T` otherwise the
-    /// behaviour of this funtion is undefined.
-    pub unsafe fn get_data<'a, T>(&'a self, key: &str) -> PamResult<&'a T> {
+    /// behaviour of this function is undefined.
+    pub unsafe fn get_data<T>(&self, key: &str) -> PamResult<&T> {
         let c_key = CString::new(key).unwrap();
         let mut ptr: *const libc::c_void = std::ptr::null();
         let res = pam_get_data(self, c_key.as_ptr(), &mut ptr);
@@ -92,8 +101,8 @@ impl PamHandle {
     /// Stores a value that can be retrieved later with `get_data`.  The value lives
     /// as long as the current pam cycle.
     ///
-    /// See `pam_set_data` in
-    /// http://www.linux-pam.org/Linux-PAM-html/mwg-expected-by-module-item.html
+    /// See the [`pam_set_data` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_set_data.3.html).
     ///
     /// # Errors
     ///
@@ -108,18 +117,14 @@ impl PamHandle {
                 cleanup::<T>,
             )
         };
-        if PamResultCode::PAM_SUCCESS == res {
-            Ok(())
-        } else {
-            Err(res)
-        }
+        to_result(res)
     }
 
     /// Retrieves a value that has been set, possibly by the pam client.  This is
     /// particularly useful for getting a `PamConv` reference.
     ///
-    /// See `pam_get_item` in
-    /// http://www.linux-pam.org/Linux-PAM-html/mwg-expected-by-module-item.html
+    /// See the [`pam_get_item` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_get_item.3.html).
     ///
     /// # Errors
     ///
@@ -136,10 +141,9 @@ impl PamHandle {
             };
             (r, t)
         };
-        if PamResultCode::PAM_SUCCESS == res {
-            Ok(item)
-        } else {
-            Err(res)
+        match res {
+            PamResultCode::PAM_SUCCESS => Ok(item),
+            other => Err(other),
         }
     }
 
@@ -148,8 +152,8 @@ impl PamHandle {
     ///
     /// Note that all items are strings, except `PAM_CONV` and `PAM_FAIL_DELAY`.
     ///
-    /// See `pam_set_item` in
-    /// http://www.linux-pam.org/Linux-PAM-html/mwg-expected-by-module-item.html
+    /// See the [`pam_set_item` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_set_item.3.html).
     ///
     /// # Errors
     ///
@@ -157,23 +161,19 @@ impl PamHandle {
     ///
     /// # Panics
     ///
-    /// Panics if the provided item key contains a nul byte
+    /// Panics if the provided item key contains a nul byte.
     pub fn set_item_str<T: crate::items::Item>(&mut self, item: T) -> PamResult<()> {
         let res =
-            unsafe { pam_set_item(self, T::type_id(), item.into_raw().cast::<libc::c_void>())};
-        if PamResultCode::PAM_SUCCESS == res {
-            Ok(())
-        } else {
-            Err(res)
-        }
+            unsafe { pam_set_item(self, T::type_id(), item.into_raw().cast::<libc::c_void>()) };
+        to_result(res)
     }
 
     /// Retrieves the name of the user who is authenticating or logging in.
     ///
     /// This is really a specialization of `get_item`.
     ///
-    /// See `pam_get_user` in
-    /// http://www.linux-pam.org/Linux-PAM-html/mwg-expected-by-module-item.html
+    /// See the [`pam_get_user` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_get_user.3.html).
     ///
     /// # Errors
     ///
@@ -181,9 +181,8 @@ impl PamHandle {
     ///
     /// # Panics
     ///
-    /// Panics if the provided prompt string contains a nul byte
+    /// Panics if the provided prompt string contains a nul byte.
     pub fn get_user(&self, prompt: Option<&str>) -> PamResult<String> {
-        let ptr: *mut c_char = std::ptr::null_mut();
         let prompt_string;
         let c_prompt = match prompt {
             Some(p) => {
@@ -192,21 +191,69 @@ impl PamHandle {
             }
             None => std::ptr::null(),
         };
-        let res = unsafe { pam_get_user(self, &ptr, c_prompt) };
-        if PamResultCode::PAM_SUCCESS == res && !ptr.is_null() {
-            let const_ptr = ptr as *const c_char;
-            let bytes = unsafe { CStr::from_ptr(const_ptr).to_bytes() };
-            String::from_utf8(bytes.to_vec()).map_err(|_| PamResultCode::PAM_CONV_ERR)
-        } else {
-            Err(res)
+        let output: *mut c_char = std::ptr::null_mut();
+        let res = unsafe { pam_get_user(self, &output, c_prompt) };
+        match res {
+            PamResultCode::PAM_SUCCESS => copy_pam_string(output),
+            otherwise => Err(otherwise),
         }
+    }
+
+    /// Retrieves the authentication token from the user.
+    ///
+    /// This is really a specialization of `get_item`.
+    ///
+    /// See the [`pam_get_authtok` manual page](
+    /// https://www.man7.org/linux/man-pages/man3/pam_get_authtok.3.html).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the underlying PAM function call fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided prompt string contains a nul byte.
+    pub fn get_authtok(&self, prompt: Option<&str>) -> PamResult<String> {
+        let prompt_string;
+        let c_prompt = match prompt {
+            Some(p) => {
+                prompt_string = CString::new(p).unwrap();
+                prompt_string.as_ptr()
+            }
+            None => std::ptr::null(),
+        };
+        let output: *mut c_char = std::ptr::null_mut();
+        let res = unsafe { pam_get_authtok(self, ItemType::AuthTok, &output, c_prompt) };
+        match res {
+            PamResultCode::PAM_SUCCESS => copy_pam_string(output),
+            otherwise => Err(otherwise),
+        }
+    }
+}
+
+/// Creates an owned copy of a string that is returned from a
+/// <code>pam_get_<var>whatever</var></code> function.
+fn copy_pam_string(result_ptr: *const c_char) -> PamResult<String> {
+    // We really shouldn't get a null pointer back here, but if we do, return nothing.
+    if result_ptr.is_null() {
+        return Ok(String::from(""));
+    }
+    let bytes = unsafe { CStr::from_ptr(result_ptr).to_bytes() };
+    String::from_utf8(bytes.to_vec()).map_err(|_| PamResultCode::PAM_CONV_ERR)
+}
+
+/// Convenience to transform a `PamResultCode` into a unit `PamResult`.
+fn to_result(result: PamResultCode) -> PamResult<()> {
+    match result {
+        PamResultCode::PAM_SUCCESS => Ok(()),
+        otherwise => Err(otherwise),
     }
 }
 
 /// Provides functions that are invoked by the entrypoints generated by the
 /// [`pam_hooks!` macro](../macro.pam_hooks.html).
 ///
-/// All of hooks are ignored by PAM dispatch by default given the default return value of `PAM_IGNORE`.
+/// All hooks are ignored by PAM dispatch by default given the default return value of `PAM_IGNORE`.
 /// Override any functions that you want to handle with your module. See `man pam(3)`.
 #[allow(unused_variables)]
 pub trait PamHooks {

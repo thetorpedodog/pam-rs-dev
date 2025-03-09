@@ -2,8 +2,8 @@ use libc::{c_char, c_int};
 use std::ffi::{CStr, CString};
 use std::ptr;
 
-use constants::PamResultCode;
 use constants::PamMessageStyle;
+use constants::PamResultCode;
 use items::Item;
 use module::PamResult;
 
@@ -37,7 +37,7 @@ pub struct Inner {
 
 pub struct Conv<'a>(&'a Inner);
 
-impl<'a> Conv<'a> {
+impl Conv<'_> {
     /// Sends a message to the pam client.
     ///
     /// This will typically result in the user seeing a message or a prompt.
@@ -77,7 +77,7 @@ impl<'a> Conv<'a> {
     }
 }
 
-impl<'a> Item for Conv<'a> {
+impl Item for Conv<'_> {
     type Raw = Inner;
 
     fn type_id() -> crate::items::ItemType {
