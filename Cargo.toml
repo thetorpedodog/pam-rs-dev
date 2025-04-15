@@ -1,7 +1,7 @@
 [package]
 name = "nonstick"
 description = "PAM bindings for Rust"
-version = "0.0.0-pre"
+version = "0.0.1"
 authors = ["Paul Fisher <paul@pfish.zone>", "Anthony Nowell <anowell@gmail.com>" ]
 repository = "https://hg.pfish.zone/crates/nonstick/"
 readme = "README.md"
