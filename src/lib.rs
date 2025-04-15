@@ -9,7 +9,7 @@
 //! For general information on writing pam modules, see
 //! [The Linux-PAM Module Writers' Guide][module-guide]
 //!
-//! [module-guide]: http://www.linux-pam.org/Linux-PAM-html/Linux-PAM_MWG.html
+//! [module-guide]: https://www.chiark.greenend.org.uk/doc/libpam-doc/html/Linux-PAM_MWG.html
 //!
 //! A typical authentication module will define an external function called
 //! `pam_sm_authenticate()`, which will use functions in this library to

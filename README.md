@@ -1,25 +1,26 @@
-pam-rs
-========
+# 🍳 nonstick
 
-Rust interface to the pluggable authentication module framework (PAM).
+Nonstick lets you use PAM (Pluggable Authentication Modules) from Rust without having to deal with icky unsafe code.
 
-The goal of this library is to provide a type-safe API that can be used to
-interact with PAM.  The library is incomplete - currently it supports a subset
-of functions for use in a pam authentication module.  A pam module is a shared
-library that is invoked to authenticate a user, or to perform other functions.
+## Status
 
-## 🌐 [pam-http](pam-http)
+It is currently very incomplete.
+It only provides functionality for developing your own PAM authentication module (i.e., a backend that PAM calls to authenticate a user or do something similar).
+At the moment, [Linux-PAM](https://github.com/linux-pam/linux-pam) is the only supported PAM implementation.
 
-An example of using pam-rs by performing HTTP basic access auth to authenticate users.
+I will make an effort not to break APIs with development, but consider it alpha, pre-1.0 software.
+While the code itself should be _secure_ and mostly safe, the API may not be completely stable.
 
-## 🍻 [pam-sober](pam-sober)
+Goals include:
 
-If you aren't sober enough for basic math, you can't login!
+- Bindings for PAM clients.
+- Support for non–Linux-PAM implementations.
 
-### Credits
+## Credits
 
-The contents of this repo are heavily borrowed from:
+This is a direct fork of [Anthony Nowell](http://anowell.com/)’s [`pam-rs`/`pam-bindings` crate](https://crates.io/crates/pam-bindings).
+`pam-rs` was in turn inspired by:
 
-- [tozny/rust-pam](https://github.com/tozny/rust-pam)
-- [ndenev/pam_groupmap](https://github.com/ndenev/pam_groupmap)
-- [beatgammit/pam-http](https://github.com/beatgammit/pam-http)
+- [`rust-pam` by tozny](https://github.com/tozny/rust-pam)
+- [`pam_groupmap` by ndenev](https://github.com/ndenev/pam_groupmap)
+- [`pam-http` by beatgammit](https://github.com/beatgammit/pam-http)

@@ -254,7 +254,8 @@ fn to_result(result: PamResultCode) -> PamResult<()> {
 /// [`pam_hooks!` macro](../macro.pam_hooks.html).
 ///
 /// All hooks are ignored by PAM dispatch by default given the default return value of `PAM_IGNORE`.
-/// Override any functions that you want to handle with your module. See `man pam(3)`.
+/// Override any functions that you want to handle with your module. See [PAM’s root manual page](
+/// https://www.man7.org/linux/man-pages/man3/pam.3.html).
 #[allow(unused_variables)]
 pub trait PamHooks {
     /// This function performs the task of establishing whether the user is permitted to gain access at
