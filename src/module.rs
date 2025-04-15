@@ -3,8 +3,8 @@
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
-use constants::{PamFlag, PamResultCode};
-use items::ItemType;
+use crate::constants::{PamFlag, PamResultCode};
+use crate::items::ItemType;
 
 /// Opaque type, used as a pointer when making pam API calls.
 ///

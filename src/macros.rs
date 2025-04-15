@@ -132,7 +132,7 @@ macro_rules! pam_try {
 
 #[cfg(test)]
 pub mod test {
-    use module::PamHooks;
+    use crate::module::PamHooks;
 
     struct Foo;
     impl PamHooks for Foo {}

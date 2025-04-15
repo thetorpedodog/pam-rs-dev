@@ -2,10 +2,10 @@ use libc::{c_char, c_int};
 use std::ffi::{CStr, CString};
 use std::ptr;
 
-use constants::PamMessageStyle;
-use constants::PamResultCode;
-use items::Item;
-use module::PamResult;
+use crate::constants::PamMessageStyle;
+use crate::constants::PamResultCode;
+use crate::items::Item;
+use crate::module::PamResult;
 
 #[repr(C)]
 struct PamMessage {

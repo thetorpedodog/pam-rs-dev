@@ -1,12 +1,13 @@
 [package]
 name = "nonstick"
 description = "PAM bindings for Rust"
-version = "0.0.1"
+version = "0.0.2-alpha.0"
 authors = ["Paul Fisher <paul@pfish.zone>", "Anthony Nowell <anowell@gmail.com>" ]
 repository = "https://hg.pfish.zone/crates/nonstick/"
 readme = "README.md"
 keywords = ["pam", "ffi", "linux", "authentication"]
 license = "MIT"
+edition = "2021"
 
 [lib]
 name = "pam"
